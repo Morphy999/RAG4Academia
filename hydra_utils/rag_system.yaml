@@ -1,0 +1,27 @@
+vector_db:
+  _target_: rag_system.VectorDB.db.VectorDB
+  persist_directory: chroma_db
+
+retrieval_system:
+  _target_: rag_system.retrieval.re.RetrievalSystem
+  vector_db: ${vector_db}
+  max_tokens: 10000
+
+generator:
+  _target_: main.generator.OllamaGenerator
+  model_name: llama3
+
+semantical_model:
+  _target_: sentence_transformers.SentenceTransformer
+  model_name_or_path: sentence-transformers/all-mpnet-base-v2
+
+chunker:
+  _target_: rag_system.chunking.json_splitter.RecursivePDFChunker
+  semantical_model: ${semantical_model}
+  chunk_size: 350
+  chunk_overlap: 60
+
+rag_pipeline:
+  _target_: rag_system.pipeline.RagSystemPipeline
+  retriever: ${retrieval_system}
+  semantical_model: ${semantical_model}
