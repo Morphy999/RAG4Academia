@@ -100,8 +100,7 @@ import hashlib
 def process_docs():
 
     vector_db = instances.get("vector_db")        
-    chunker = instances.get("chunker")
-    semantical_chunker = instances.get("semantic_chunker")
+    semantical_chunker = instances.get("semantical_chunker")
 
     total_chunks = 0
     processed_files = []

@@ -1,9 +1,8 @@
 import pymupdf.layout
 import pymupdf4llm
 import pymupdf
-from langchain_text_splitters import RecursiveCharacterTextSplitter, TokenTextSplitter
+from langchain_text_splitters import TokenTextSplitter
 from langchain_experimental.text_splitter import SemanticChunker
-from langchain_openai.embeddings import OpenAIEmbeddings
 from typing import List, Tuple, Dict
 import json 
 
@@ -123,13 +122,15 @@ class RecursivePDFChunker:
 
         return chunks, embeddings, chunk_metadata
     
+    
+    
 class SemanticPDFChunker:
 
     def __init__(self, semantical_model = None):
         self.semantical_model = semantical_model
         
         if not self.semantical_model is None:
-            self.splitter = SemanticChunker(semantical_model)
+            self.splitter = SemanticChunker(SentenceTransformerEmbeddingsAdapter(semantical_model))
 
     def run(self, pdf_path: str):
 
@@ -166,3 +167,15 @@ class SemanticPDFChunker:
             })
 
         return chunks, embeddings, chunk_metadata
+    
+class SentenceTransformerEmbeddingsAdapter:
+    def __init__(self, model):
+        self.model = model
+
+    def embed_documents(self, texts):
+        embeddings = self.model.encode(texts, convert_to_numpy=True)
+        return embeddings.tolist()
+
+    def embed_query(self, text):
+        embedding = self.model.encode(text, convert_to_numpy=True)
+        return embedding.tolist()
