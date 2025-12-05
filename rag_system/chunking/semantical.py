@@ -88,31 +88,3 @@ class SemanticalChunker:
         embeddings = self.semantical_model.encode(final_chunks, convert_to_tensor=True)
         
         return final_chunks, embeddings
-    
-    
-# if __name__ == "__main__":
-#     from sentence_transformers import SentenceTransformer
-#     from rag_system.utils.pdf import extract_pdf
-#     from pathlib import Path
-
-#     semantical_model = SentenceTransformer('sentence-transformers/all-mpnet-base-v2')
-#     chunker = SemanticalChunker(semantical_model)
-    
-#     print('Extracting text from PDF...')
-#     sample_text = extract_pdf(Path(r'C:\Users\dracb\OneDrive\Documentos\GitHub\RAG4Academia\data\DissertacaoRobertavFinal'))
-    
-#     print('Running semantical chunking...')
-#     chunks, embeddings = chunker.run(sample_text, max_chars=300, overlap_lines=1)
-    
-#     import os
-
-#     output_dir = "chunks_txt"
-#     os.makedirs(output_dir, exist_ok=True)
-
-#     for i, chunk in enumerate(chunks, start=1):
-#         filename = os.path.join(output_dir, f"chunk_{i}.txt")
-        
-#         with open(filename, "w", encoding="utf-8") as f:
-#             f.write(chunk)
-
-#         print(f"Chunk {i} salvo em: {filename}")

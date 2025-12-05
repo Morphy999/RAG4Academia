@@ -5,19 +5,11 @@ class RetrievalSystem:
     Sistema de recuperação semântica baseado em vetor embeddings.
     """
 
-    def __init__(self, vector_db, max_tokens: int = 1000):
-        """
-        Args:
-            vector_db: instância do seu vetor DB (Chroma, etc.)
-            max_tokens: limite aproximado de tokens combinados por contexto
-        """
+    def __init__(self, vector_db, max_tokens: int = 10000):
         self.vector_db = vector_db
         self.max_tokens = max_tokens
 
     def _truncate_context(self, documents: List[Dict[str, str]], tokenizer=None) -> List[Dict[str, str]]:
-        """
-        Limita os documentos combinados a max_tokens.
-        """
         if not tokenizer:
             total_tokens = 0
             truncated_docs = []

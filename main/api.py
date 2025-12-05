@@ -101,6 +101,7 @@ def process_docs():
 
     vector_db = instances.get("vector_db")        
     chunker = instances.get("chunker")
+    semantical_chunker = instances.get("semantic_chunker")
 
     total_chunks = 0
     processed_files = []
@@ -115,7 +116,7 @@ def process_docs():
             file_hash = hashlib.md5(f.read()).hexdigest()
 
         if filename.lower().endswith(".pdf"):
-            chunks, embeddings, metadata = chunker.run(str(file_path))
+            chunks, embeddings, metadata = semantical_chunker.run(str(file_path))
             
         ids = [
             f"{filename}_{file_hash}_{i}"

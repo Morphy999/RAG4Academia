@@ -21,6 +21,10 @@ chunker:
   chunk_size: 350
   chunk_overlap: 60
 
+semantical_chunker:
+  _target_: rag_system.chunking.json_splitter.SemanticPDFChunker
+  semantical_model: ${semantical_model}
+
 rag_pipeline:
   _target_: rag_system.pipeline.RagSystemPipeline
   retriever: ${retrieval_system}

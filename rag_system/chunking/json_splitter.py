@@ -1,7 +1,9 @@
 import pymupdf.layout
 import pymupdf4llm
 import pymupdf
-from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter, TokenTextSplitter
+from langchain_experimental.text_splitter import SemanticChunker
+from langchain_openai.embeddings import OpenAIEmbeddings
 from typing import List, Tuple, Dict
 import json 
 
@@ -64,9 +66,7 @@ def clean_text(t: str) -> str:
 
 
 def merge_small_chunks(chunks: List[str], min_chars: int = 300) -> List[str]:
-    """
-    Junta chunks pequenos em blocos maiores para evitar fragmentos muito curtos.
-    """
+    
     merged = []
     buffer = ""
 
@@ -89,16 +89,11 @@ def merge_small_chunks(chunks: List[str], min_chars: int = 300) -> List[str]:
 
 class RecursivePDFChunker:
 
-    def __init__(self, semantical_model, chunk_size: int = 1000, chunk_overlap: int = 100):
+    def __init__(self, semantical_model, chunk_size: int = 600, chunk_overlap: int = 80):
         self.semantical_model = semantical_model
-        self.splitter = RecursiveCharacterTextSplitter(
-            chunk_size=chunk_size,
-            chunk_overlap=chunk_overlap,
-            length_function=len,
-            separators=["\n\n", ". ", "? ", "! ", "\n", " "]
-        )
+        self.splitter = TokenTextSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap, encoding_name="cl100k_base")
 
-    def run(self, pdf_path: str) -> Tuple[List[str], List, List[Dict]]:
+    def run(self, pdf_path: str):
 
         pages = extract_text_from_json(pdf_path)
 
@@ -114,8 +109,6 @@ class RecursivePDFChunker:
         docs = self.splitter.create_documents([full_text])
         chunks = [d.page_content for d in docs]
 
-        chunks = merge_small_chunks(chunks, min_chars=300)
-        
         embeddings = self.semantical_model.encode(chunks, convert_to_tensor=True)
 
         chunk_metadata = []
@@ -124,31 +117,52 @@ class RecursivePDFChunker:
 
         for i, ch in enumerate(chunks):
             page_idx = min(i // chunks_per_page, num_pages - 1)
-            chunk_metadata.append({'page_number': page_mapping[page_idx]['page_number']})
-            
+            chunk_metadata.append({
+                'page_number': page_mapping[page_idx]['page_number']
+            })
+
         return chunks, embeddings, chunk_metadata
-
-
-# if __name__ == "__main__":
-    # semantical_model = SentenceTransformer("sentence-transformers/all-mpnet-base-v2")
-
-#     chunker = RecursivePDFChunker(
-#         semantical_model,
-#         chunk_size=1600,
-#         chunk_overlap=100
-#     )
-
-#     pdf_path = r"C:\Users\dracb\OneDrive\Documentos\GitHub\RAG4Academia\data\DissertacaoRobertavFinal.pdf"
-
-#     chunks, embeddings, metadata = chunker.run(pdf_path)
     
-#     output_dir = "chunks_recursive_json"
-#     os.makedirs(output_dir, exist_ok=True)
+class SemanticPDFChunker:
 
-#     for i, chunk in enumerate(chunks, start=1):
-#         filename = os.path.join(output_dir, f"chunk_{i}.txt")
-#         with open(filename, "w", encoding="utf-8") as f:
-#             f.write(chunk)
-#         print(f"Chunk {i} salvo em: {filename} (página: {metadata[i-1]['page_number']})")
+    def __init__(self, semantical_model = None):
+        self.semantical_model = semantical_model
+        
+        if not self.semantical_model is None:
+            self.splitter = SemanticChunker(semantical_model)
 
-#     print(f"Total de chunks: {len(chunks)}")
+    def run(self, pdf_path: str):
+
+        pages = extract_text_from_json(pdf_path)
+
+        all_text = []
+        page_mapping = []
+
+        for page in pages:
+            text = clean_text(page["text"])
+            if text:
+                all_text.append(text)
+                page_mapping.append(page["page_number"])
+
+        full_text = "\n\n".join(all_text)
+        
+        chunks = self.splitter.split_text(full_text)
+
+        embeddings = self.semantical_model.encode(
+            chunks,
+            convert_to_tensor=True
+        )
+
+        num_pages = len(page_mapping)
+        total_chunks = len(chunks)
+
+        chunk_metadata = []
+        for i in range(total_chunks):
+            page_idx = int(i * num_pages / total_chunks)
+            page_idx = min(page_idx, num_pages - 1)
+
+            chunk_metadata.append({
+                "page_number": page_mapping[page_idx]
+            })
+
+        return chunks, embeddings, chunk_metadata

@@ -14,7 +14,6 @@ class RagSystemPipeline:
         
         if len(docs) == 0:
             context_combined = "Nenhum contexto encontrado."
-        
         else:
             contexts = [doc['text'] for doc in retrieval_results.get('documents', [])]
             context_combined = "\n\n".join(contexts)
