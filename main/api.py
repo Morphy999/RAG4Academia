@@ -46,7 +46,7 @@ async def ask_ollama3_with_rag_endpoint(request: PromptRequest):
 
     final_prompt, retrievals = rag_pipeline.run(
         query_user=request.prompt,
-        n_retrievals=request.num_docs
+        final_k=request.num_docs
     )
     
     print("final_prompt", final_prompt)
@@ -122,14 +122,16 @@ def process_docs():
             for i in range(len(chunks))
         ]
 
-        final_metadata = [
-            {
+        final_metadata = []
+        for meta in metadata:
+            merged = dict(meta) if isinstance(meta, dict) else {}
+            if "page" not in merged and "page_number" in merged:
+                merged["page"] = merged.get("page_number")
+            merged.update({
                 "source": filename,
-                "page_number": meta.get("page_number"),
                 "file_hash": file_hash
-            }
-            for meta in metadata
-        ]
+            })
+            final_metadata.append(merged)
 
         vector_db.add_embeddings(
             ids=ids,
